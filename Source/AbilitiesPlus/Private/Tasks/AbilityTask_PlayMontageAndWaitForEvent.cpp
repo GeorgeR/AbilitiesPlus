@@ -1,6 +1,6 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
 
-#include "AbilityTask_PlayMontageAndWaitForEvent.h"
+#include "Tasks/AbilityTask_PlayMontageAndWaitForEvent.h"
 
 #include "GameFramework/Character.h"
 #include "AbilitySystemComponent.h"
@@ -36,7 +36,7 @@ void UAbilityTask_PlayMontageAndWaitForEvent::OnMontageBlendingOut(UAnimMontage*
 
 void UAbilityTask_PlayMontageAndWaitForEvent::OnAbilityCancelled()
 {
-	// TODO: Merge this fix back to engine, it was calling the wrong callback
+	// #todo Merge this fix back to engine, it was calling the wrong callback
 	if (StopPlayingMontage())
 	{
 		// Let the BP handle the interrupt as well
@@ -87,7 +87,11 @@ void UAbilityTask_PlayMontageAndWaitForEvent::Activate()
 		return;
 
 	bool bPlayedMontage = false;
+
+#pragma warning(push)
+#pragma warning(disable: 4458)
 	auto AbilitySystemComponent = GetTargetAbilitySystemComponent<UAbilitySystemComponent>();
+#pragma warning(pop)
 
 	if (AbilitySystemComponent)
 	{
@@ -157,7 +161,10 @@ void UAbilityTask_PlayMontageAndWaitForEvent::OnDestroy(bool AbilityEnded)
 			StopPlayingMontage();
 	}
 
+#pragma warning(push)
+#pragma warning(disable: 4458)
 	auto AbilitySystemComponent = GetTargetAbilitySystemComponent<UAbilitySystemComponent>();
+#pragma warning(pop)
 	if (AbilitySystemComponent)
 		AbilitySystemComponent->RemoveGameplayEventTagContainerDelegate(EventTags, EventHandle);
 
