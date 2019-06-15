@@ -17,8 +17,8 @@ class ABILITIESPLUS_API UAPAbilitySystemComponent
 	GENERATED_BODY()
 
 public:
-	virtual void AddInitialAbilitiesAndEffects(const TEnumAsByte<ENetRole> NetRole, const TScriptInterface<IAPPlayerInterface>& Character);
-	virtual void RemoveInitialAbilitiesAndEffects(const TEnumAsByte<ENetRole> NetRole, const TScriptInterface<IAPPlayerInterface>& Character);
+	virtual void AddInitialAbilitiesAndEffects(const TEnumAsByte<ENetRole> NetRole, const TScriptInterface<IAPPlayerInterface>& Player);
+	virtual void RemoveInitialAbilitiesAndEffects(const TEnumAsByte<ENetRole> NetRole, const TScriptInterface<IAPPlayerInterface>& Player);
 
 	/** Returns a list of currently active ability instances that match the tags */
 	virtual void GetActiveAbilitiesWithTags(const FGameplayTagContainer& GameplayTagContainer, TArray<UGameplayAbility*>& ActiveAbilities);
