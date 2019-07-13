@@ -1,10 +1,15 @@
 #pragma once
 
+#define POST_ATTRIBUTE_CHANGE(PropertyName)
+
+/*
+// todo: use when C++17 
 #if __has_include("NoesisTypeClass.h")
 #define POST_ATTRIBUTE_CHANGE(PropertyName) NoesisNotifyPropertyChanged(this, #PropertyName);
 #else
 #define POST_ATTRIBUTE_CHANGE(PropertyName)
 #endif
+*/
 
 // Uses macros from AttributeSet.h
 #define ATTRIBUTE_SETTER(PropertyName)															\
