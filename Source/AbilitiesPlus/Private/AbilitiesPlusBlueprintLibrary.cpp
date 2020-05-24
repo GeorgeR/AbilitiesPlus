@@ -4,7 +4,7 @@
 #include "AbilitySystemInterface.h"
 #include "GameplayEffectContainer.h"
 #include "Engine/EngineTypes.h"
-#include "GameplayAbility.h"
+#include "Abilities/GameplayAbility.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitiesPlusTargetType.h"

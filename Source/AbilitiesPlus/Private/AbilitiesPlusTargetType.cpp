@@ -4,7 +4,7 @@
 
 #include "GameFramework/Character.h"
 #include "GameFramework/Actor.h"
-#include "GameplayAbilityTypes.h"
+#include "Abilities/GameplayAbilityTypes.h"
 
 void UAPTargetType::GetTargets_Implementation(ACharacter* TargetingCharacter, AActor* TargetingActor, FGameplayEventData EventData, TArray<FHitResult>& HitResults, TArray<AActor*>& Actors) const
 {
@@ -13,13 +13,13 @@ void UAPTargetType::GetTargets_Implementation(ACharacter* TargetingCharacter, AA
 
 void UAPTargetType_UseOwner::GetTargets_Implementation(ACharacter* TargetingCharacter, AActor* TargetingActor, FGameplayEventData EventData, TArray<FHitResult>& HitResults, TArray<AActor*>& Actors) const
 {
-	auto Actor = Cast<AActor>(TargetingCharacter);
+    const auto Actor = Cast<AActor>(TargetingCharacter);
 	Actors.Add(Actor);
 }
 
 void UAPTargetType_UseEventData::GetTargets_Implementation(ACharacter* TargetingCharacter, AActor* TargetingActor, FGameplayEventData EventData, TArray<FHitResult>& HitResults, TArray<AActor*>& Actors) const
 {
-	const FHitResult* FoundHitResult = EventData.ContextHandle.GetHitResult();
+    auto FoundHitResult = EventData.ContextHandle.GetHitResult();
 	if (FoundHitResult)
 		HitResults.Add(*FoundHitResult);
 	else if (EventData.Target)

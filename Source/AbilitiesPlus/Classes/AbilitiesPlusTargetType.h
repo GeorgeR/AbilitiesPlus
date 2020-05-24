@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "GameplayAbilityTypes.h"
+#include "Abilities/GameplayAbilityTypes.h"
 
 #include "AbilitiesPlusTargetType.generated.h"
 

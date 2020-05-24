@@ -21,7 +21,12 @@ void UAbilityTask_PlayMontageAndWaitForEvent::OnMontageBlendingOut(UAnimMontage*
 
 			// Reset AnimRootMotionTranslationScale
 			auto Character = Cast<ACharacter>(GetAvatarActor());
-			if (Character && (Character->Role == ROLE_Authority || (Character->Role == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
+#if ENGINE_MINOR_VERSION >= 24
+			const auto CharacterRole = Character->GetLocalRole();
+#else
+            const auto CharacterRole = Character->Role;
+#endif
+			if (Character && (CharacterRole == ROLE_Authority || (CharacterRole == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
 				Character->SetAnimRootMotionTranslationScale(1.f);
 		}
 	}
@@ -58,7 +63,7 @@ void UAbilityTask_PlayMontageAndWaitForEvent::OnGameplayEvent(FGameplayTag Event
 {
 	if (ShouldBroadcastAbilityTaskDelegates())
 	{
-		FGameplayEventData TempData = *Payload;
+        auto TempData = *Payload;
 		TempData.EventTag = EventTag;
 
 		EventReceived.Broadcast(EventTag, TempData);
@@ -86,7 +91,7 @@ void UAbilityTask_PlayMontageAndWaitForEvent::Activate()
 	if (Ability == nullptr)
 		return;
 
-	bool bPlayedMontage = false;
+    auto bPlayedMontage = false;
 
 #pragma warning(push)
 #pragma warning(disable: 4458)
@@ -117,7 +122,7 @@ void UAbilityTask_PlayMontageAndWaitForEvent::Activate()
 				AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, MontageToPlay);
 
 				auto Character = Cast<ACharacter>(GetAvatarActor());
-				if (Character && (Character->Role == ROLE_Authority || (Character->Role == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
+				if (Character && (Character->GetLocalRole() == ROLE_Authority || (Character->GetLocalRole() == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
 					Character->SetAnimRootMotionTranslationScale(AnimRootMotionTranslationScale);
 
 				bPlayedMontage = true;
@@ -177,7 +182,7 @@ bool UAbilityTask_PlayMontageAndWaitForEvent::StopPlayingMontage()
 	if (!ActorInfo)
 		return false;
 
-	auto AnimInstance = ActorInfo->GetAnimInstance();
+    const auto AnimInstance = ActorInfo->GetAnimInstance();
 	if (AnimInstance == nullptr)
 		return false;
 
@@ -209,7 +214,7 @@ FString UAbilityTask_PlayMontageAndWaitForEvent::GetDebugString() const
 	if (Ability)
 	{
 		const auto ActorInfo = Ability->GetCurrentActorInfo();
-		auto AnimInstance = ActorInfo->GetAnimInstance();
+        const auto AnimInstance = ActorInfo->GetAnimInstance();
 
 		if (AnimInstance != nullptr)
 			PlayingMontage = AnimInstance->Montage_IsActive(MontageToPlay) ? MontageToPlay : AnimInstance->GetCurrentActiveMontage();

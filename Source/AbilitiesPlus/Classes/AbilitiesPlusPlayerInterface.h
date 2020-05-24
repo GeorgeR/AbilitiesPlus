@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "PointerIsConvertibleFromTo.h"
+#include "Templates/PointerIsConvertibleFromTo.h"
 
 #include "AbilitiesPlusPlayerInterface.generated.h"
 
