@@ -1,0 +1,70 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+#include "EdGraph/EdGraphPin.h"
+#include "K2Node_Switch.h"
+#include "AttributeSet.h"
+
+#include "K2Node_SwitchAttributeSet.generated.h"
+
+class FBlueprintActionDatabaseRegistrar;
+
+UCLASS(MinimalAPI)
+class UK2Node_SwitchAttributeSet
+    : public UK2Node_Switch
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	UAttributeSet* AttributeSet;
+
+	UPROPERTY()
+	TArray<FGameplayAttribute> PinAttributes;
+
+	UPROPERTY()
+	TArray<FText> AttributeNames;
+
+	UPROPERTY(EditAnywhere, Category=PinOptions)
+	TArray<FName> PinNames;
+
+    UK2Node_SwitchAttributeSet();
+	
+	// UObject interface
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	virtual void PostLoad() override;
+	// End of UObject interface
+
+	// UEdGraphNode interface
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+	virtual FText GetTooltipText() const override;
+	virtual bool ShouldShowNodeProperties() const override { return true; }
+	// End of UEdGraphNode interface
+
+	// UK2Node interface
+	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const override;
+	// End of UK2Node interface
+
+	// UK2Node_Switch Interface
+	virtual void AddPinToSwitchNode() override;
+	virtual FEdGraphPinType GetInnerCaseType() const override;
+	virtual FName GetUniquePinName() override;
+	virtual FEdGraphPinType GetPinType() const override;
+	FName GetPinNameGivenIndex(int32 Index) const override;
+
+	/*virtual void RemovePinFromSwitchNode(UEdGraphPin* TargetPin) override;
+	virtual ERedirectType DoPinsMatchForReconstruction(const UEdGraphPin* NewPin, int32 NewPinIndex, const UEdGraphPin* OldPin, int32 OldPinIndex) const override;*/
+	// End of UK2Node_Switch Interface
+
+	void SetAttributeSet(UAttributeSet* InAttributeSet);
+
+protected:
+	virtual void CreateFunctionPin() override;
+	virtual void CreateCasePins() override;
+	virtual void CreateSelectionPin() override;
+	virtual void RemovePin(UEdGraphPin* TargetPin) override;
+
+private:
+	FNodeTextCache CachedNodeTitle;
+};

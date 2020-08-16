@@ -1,0 +1,214 @@
+#include "K2Node_SwitchAttributeSet.h"
+
+#include "EdGraphSchema_K2.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "BlueprintNodeSpawner.h"
+#include "BlueprintActionDatabaseRegistrar.h"
+#include "BlueprintFieldNodeSpawner.h"
+
+#define LOCTEXT_NAMESPACE "K2Node"
+
+UK2Node_SwitchAttributeSet::UK2Node_SwitchAttributeSet()
+{
+    FunctionName = TEXT("NotEqual_AttributeSetAttributeSet");
+    FunctionClass = UKismetMathLibrary::StaticClass();
+	OrphanedPinSaveMode = ESaveOrphanPinMode::SaveNone;
+}
+
+void UK2Node_SwitchAttributeSet::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+    auto bIsDirty = false;
+    const auto PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(UK2Node_SwitchAttributeSet, AttributeSet))
+	{
+		bIsDirty = true;
+	}
+
+	if (bIsDirty)
+	{
+		ReconstructNode();
+		GetGraph()->NotifyGraphChanged();
+	}
+
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+
+void UK2Node_SwitchAttributeSet::PostLoad()
+{
+	Super::PostLoad();
+	if (auto* FunctionPin = FindPin(FunctionName))
+        FunctionPin->DefaultObject = FunctionClass->GetDefaultObject();
+}
+
+FText UK2Node_SwitchAttributeSet::GetNodeTitle(ENodeTitleType::Type TitleType) const
+{
+    return NSLOCTEXT("K2Node", "Switch_AttributeSet", "Switch on AttributeSet");
+}
+
+FText UK2Node_SwitchAttributeSet::GetTooltipText() const
+{
+    return NSLOCTEXT("K2Node", "SwitchAttributeSet_ToolTip", "Selects an output that matches the input value");
+}
+
+void UK2Node_SwitchAttributeSet::GetMenuActions(FBlueprintActionDatabaseRegistrar& ActionRegistrar) const
+{
+    const auto* ActionKey = GetClass();
+	if (ActionRegistrar.IsOpenForRegistration(ActionKey))
+	{
+        auto* NodeSpawner = UBlueprintNodeSpawner::Create(GetClass());
+		check(NodeSpawner != nullptr);
+
+		ActionRegistrar.AddBlueprintAction(ActionKey, NodeSpawner);
+	}
+}
+
+void UK2Node_SwitchAttributeSet::AddPinToSwitchNode()
+{
+    const auto PinName = GetUniquePinName();
+	PinNames.Add(PinName);
+
+	UEdGraphPin* NewPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, PinName);
+	NewPin->PinFriendlyName = FText::FromName(PinName);
+
+	if (PinAttributes.Num() < PinNames.Num())
+	{
+		PinAttributes.Add(FGameplayAttribute());
+	}	
+}
+
+FEdGraphPinType UK2Node_SwitchAttributeSet::GetInnerCaseType() const
+{
+	FEdGraphPinType PinType;
+	PinType.PinCategory = UEdGraphSchema_K2::PC_String;
+	return PinType;
+}
+
+FName UK2Node_SwitchAttributeSet::GetUniquePinName()
+{
+	FName NewPinName;
+    auto Index = 0;
+	while (true)
+	{
+		NewPinName = *FString::Printf(TEXT("Case_%d"), Index++);
+		if (!FindPin(NewPinName))
+            break;
+    }
+	return NewPinName;
+}
+
+FEdGraphPinType UK2Node_SwitchAttributeSet::GetPinType() const
+{
+    FEdGraphPinType PinType;
+    PinType.PinCategory = UEdGraphSchema_K2::PC_Object;
+	PinType.PinSubCategoryObject = UAttributeSet::StaticClass();
+    return PinType;
+}
+
+FName UK2Node_SwitchAttributeSet::GetPinNameGivenIndex(int32 Index) const
+{
+	check(Index);
+	return PinNames[Index];
+}
+
+void UK2Node_SwitchAttributeSet::SetAttributeSet(UAttributeSet* InAttributeSet)
+{
+	AttributeSet = InAttributeSet;
+
+	// regenerate enum name list
+	PinAttributes.Empty();
+	AttributeNames.Empty();
+	
+	if (AttributeSet)
+	{
+		PreloadObject(AttributeSet);
+		AttributeSet->ConditionalPostLoad();
+
+		//InAttributeSet->GetClass()->Properties
+		for(TFieldIterator<FStructProperty> Iterator(AttributeSet->GetClass()); Iterator; ++Iterator)
+		{
+			auto* Property = *Iterator;
+			if(Property->Struct == FGameplayAttribute::StaticStruct())
+            {
+				auto* DataPtr = Property->ContainerPtrToValuePtr<FGameplayAttribute>(AttributeSet);
+				PinAttributes.Add(*DataPtr);
+
+				AttributeNames.Add(Property->GetDisplayNameText());
+            }
+		}
+	}
+}
+
+void UK2Node_SwitchAttributeSet::CreateFunctionPin()
+{
+	auto* FunctionPin = CreatePin(EEdGraphPinDirection::EGPD_Input, UEdGraphSchema_K2::PC_Object, FunctionClass, FunctionName);
+	FunctionPin->bDefaultValueIsReadOnly = true;
+	FunctionPin->bNotConnectable = true;
+	FunctionPin->bHidden = true;
+
+	auto* Function = FindUField<UFunction>(FunctionClass, FunctionName);
+	const bool bIsStaticFunc = Function->HasAllFunctionFlags(FUNC_Static);
+	if (bIsStaticFunc)
+	{
+		// Wire up the self to the CDO of the class if it's not us
+		if (auto* BP = GetBlueprint())
+		{
+			UClass* FunctionOwnerClass = Function->GetOuterUClass();
+			if (!BP->SkeletonGeneratedClass->IsChildOf(FunctionOwnerClass))
+			{
+				FunctionPin->DefaultObject = FunctionOwnerClass->GetDefaultObject();
+			}
+		}
+	}
+}
+
+void UK2Node_SwitchAttributeSet::CreateCasePins()
+{
+    while (PinAttributes.Num() > PinNames.Num())
+	{
+		const auto PinName = GetUniquePinName();
+		PinNames.Add(PinName);
+	}
+
+	if (PinNames.Num() > PinAttributes.Num())
+        PinNames.SetNum(PinAttributes.Num());
+
+    for (auto Index = 0; Index < PinAttributes.Num(); ++Index)
+  	{
+		if (PinAttributes[Index].IsValid())
+            PinNames[Index] = *PinAttributes[Index].GetName();
+        else
+            PinNames[Index] = GetUniquePinName();
+
+        UEdGraphPin* NewPin = CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, PinNames[Index]);
+		if (PinAttributes[Index].IsValid())
+            NewPin->PinFriendlyName = FText::FromString(PinAttributes[Index].GetName());
+        else
+            NewPin->PinFriendlyName = FText::FromName(PinNames[Index]);
+    }
+}
+
+void UK2Node_SwitchAttributeSet::CreateSelectionPin()
+{
+    auto* K2Schema = GetDefault<UEdGraphSchema_K2>();
+    auto* Pin = CreatePin(EEdGraphPinDirection::EGPD_Input, UEdGraphSchema_K2::PC_Object, UAttributeSet::StaticClass(), TEXT("Selection"));
+    K2Schema->SetPinAutogeneratedDefaultValueBasedOnType(Pin);
+}
+
+void UK2Node_SwitchAttributeSet::RemovePin(UEdGraphPin* TargetPin)
+{
+	checkSlow(TargetPin);
+
+    const auto PinName = TargetPin->PinName;
+	// Clean-up pin name array
+    auto Index = PinNames.IndexOfByKey(PinName);
+	if (Index >= 0)
+	{
+		//if (Index < PinContainers.Num())
+		//{
+		//	PinContainers.RemoveAt(Index);
+		//}
+		PinNames.RemoveAt(Index);
+	}
+}
+
+#undef LOCTEXT_NAMESPACE

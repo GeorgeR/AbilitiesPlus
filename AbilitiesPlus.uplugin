@@ -18,7 +18,12 @@
 			"Name": "AbilitiesPlus",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
-		}
+      },
+    {
+      "Name": "AbilitiesPlusEditor",
+      "Type": "UncookedOnly",
+      "LoadingPhase": "PreDefault"
+    }
 	],
 	"Plugins": [
 		{
